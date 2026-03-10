@@ -1,11 +1,11 @@
-GET http://localhost:3000/health HTTP/1.1
+GET http://localhost:8000/health HTTP/1.1
 
 ### ===========================
 ### 2. Login as Admin
 ### ===========================
 
 # @name login
-POST http://localhost:3000/api/auth/login HTTP/1.1
+POST http://localhost:8000/api/auth/login HTTP/1.1
 Content-Type: application/json
 
 {
@@ -19,14 +19,14 @@ Content-Type: application/json
 
 @token = {{login.response.body.token}}
 
-GET http://localhost:3000/api/auth/me HTTP/1.1
+GET http://localhost:8000/api/auth/me HTTP/1.1
 Authorization: Bearer {{token}}
 
 ### ===========================
 ### 4. Create a Commercial Account (Admin only)
 ### ===========================
 
-POST http://localhost:3000/api/admin/commercials HTTP/1.1
+POST http://localhost:8000/api/admin/commercials HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -40,35 +40,35 @@ Authorization: Bearer {{token}}
 ### 5. Get All Commercials (Admin only)
 ### ===========================
 
-GET http://localhost:3000/api/admin/commercials HTTP/1.1
+GET http://localhost:8000/api/admin/commercials HTTP/1.1
 Authorization: Bearer {{token}}
 
 ### ===========================
 ### 6. Get Commercial by ID (Admin only)
 ### ===========================
 
-GET http://localhost:3000/api/admin/commercials/2 HTTP/1.1
+GET http://localhost:8000/api/admin/commercials/2 HTTP/1.1
 Authorization: Bearer {{token}}
 
 ### ===========================
 ### 7. Get All Tickets (Admin only)
 ### ===========================
 
-GET http://localhost:3000/api/admin/tickets HTTP/1.1
+GET http://localhost:8000/api/admin/tickets HTTP/1.1
 Authorization: Bearer {{token}}
 
 ### ===========================
 ### 8. Get Ticket by ID (Admin only)
 ### ===========================
 
-GET http://localhost:3000/api/admin/tickets/1 HTTP/1.1
+GET http://localhost:8000/api/admin/tickets/1 HTTP/1.1
 Authorization: Bearer {{token}}
 
 ### ===========================
 ### 9. Update Ticket Status (Admin only)
 ### ===========================
 
-PATCH http://localhost:3000/api/admin/tickets/1/status HTTP/1.1
+PATCH http://localhost:8000/api/admin/tickets/1/status HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -81,7 +81,7 @@ Authorization: Bearer {{token}}
 ### ===========================
 
 # @name commercialLogin
-POST http://localhost:3000/api/auth/login HTTP/1.1
+POST http://localhost:8000/api/auth/login HTTP/1.1
 Content-Type: application/json
 
 {
@@ -95,14 +95,14 @@ Content-Type: application/json
 
 @commercialToken = {{commercialLogin.response.body.token}}
 
-GET http://localhost:3000/api/auth/me HTTP/1.1
+GET http://localhost:8000/api/auth/me HTTP/1.1
 Authorization: Bearer {{commercialToken}}
 
 ### ===========================
 ### 12. Create a Ticket (Commercial)
 ### ===========================
 
-POST http://localhost:3000/api/commercials/tickets HTTP/1.1
+POST http://localhost:8000/api/commercials/tickets HTTP/1.1
 Authorization: Bearer {{commercialToken}}
 Content-Type: multipart/form-data; boundary=----Boundary
 
@@ -133,5 +133,5 @@ Content-Type: image/png
 ### 12. Get My Tickets (Commercial)
 ### ===========================
 
-GET http://localhost:3000/api/commercials/tickets HTTP/1.1
+GET http://localhost:8000/api/commercials/tickets HTTP/1.1
 Authorization: Bearer {{commercialToken}}
