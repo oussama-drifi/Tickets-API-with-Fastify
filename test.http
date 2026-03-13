@@ -5,12 +5,12 @@ GET http://localhost:8000/health HTTP/1.1
 ### ===========================
 
 # @name login
-POST http://localhost:8000/api/auth/login HTTP/1.1
+POST https://tickets-api-with-fastify-production.up.railway.app/api/auth/login HTTP/1.1
 Content-Type: application/json
 
 {
-    "email": "admin@example.com",
-    "password": "admin123"
+    "email": "amin@gmail.com",
+    "password": "amin123"
 }
 
 ### ===========================

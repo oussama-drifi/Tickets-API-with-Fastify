@@ -51,6 +51,7 @@ async function dbConnector(fastify, options) {
         });
     } catch (error) {
         fastify.log.error('error: Database connection failed:', error);
+        throw error;
     }
 }
 
