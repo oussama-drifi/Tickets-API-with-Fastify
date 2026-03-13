@@ -9,8 +9,8 @@ POST https://tickets-api-with-fastify-production.up.railway.app/api/auth/login H
 Content-Type: application/json
 
 {
-    "email": "amin@gmail.com",
-    "password": "amin123"
+    "email": "admin@example.com",
+    "password": "admin123"
 }
 
 ### ===========================
@@ -40,7 +40,7 @@ Authorization: Bearer {{token}}
 ### 5. Get All Commercials (Admin only)
 ### ===========================
 
-GET http://localhost:8000/api/admin/commercials HTTP/1.1
+GET https://tickets-api-with-fastify-production.up.railway.app/api/admin/commercials HTTP/1.1
 Authorization: Bearer {{token}}
 
 ### ===========================

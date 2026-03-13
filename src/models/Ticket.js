@@ -25,5 +25,5 @@ export const initTicketModel = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: false
         }
-    });
+    }, { tableName: 'tickets' });
 };

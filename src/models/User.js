@@ -35,5 +35,5 @@ export const initUserModel = (sequelize) => {
             allowNull: true,
             defaultValue: null
         }
-    });
+    }, { tableName: 'users' });
 };
