@@ -4,10 +4,6 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 // file uploads built-in plugin
 import multipart from '@fastify/multipart';
-// serve static files (uploaded images)
-import fastifyStatic from '@fastify/static';
-import { join } from 'node:path';
-import { mkdirSync } from 'node:fs';
 // plugins
 import dbConnector from './plugins/db.js';
 import authPlugin from './plugins/auth.js';
@@ -28,15 +24,6 @@ export async function buildApp(options = {}) {
         limits: {
             fileSize: 5 * 1024 * 1024 // 5MB limit
         }
-    });
-
-    // Ensure upload directories exist
-    mkdirSync(join(process.cwd(), 'uploads', 'profiles'), { recursive: true });
-
-    // Serve uploaded images
-    await app.register(fastifyStatic, {
-        root: join(process.cwd(), 'uploads'),
-        prefix: '/uploads/'
     });
 
     // Register our Database Plugin

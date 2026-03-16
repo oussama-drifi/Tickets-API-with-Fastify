@@ -12,7 +12,7 @@ export const createCommercial = async (request, reply) => {
         if (part.type === 'file') {
             const result = await saveProfileImage(part);
             if (result.error) return reply.code(400).send({ error: result.error });
-            profileImagePath = result.path;
+            profileImagePath = result.url;
         } else {
             fields[part.fieldname] = part.value;
         }
@@ -58,7 +58,7 @@ export const updateCommercial = async (request, reply) => {
         if (part.type === 'file') {
             const result = await saveProfileImage(part);
             if (result.error) return reply.code(400).send({ error: result.error });
-            newImagePath = result.path;
+            newImagePath = result.url;
         } else {
             fields[part.fieldname] = part.value;
         }

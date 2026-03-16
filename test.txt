@@ -1,0 +1,6 @@
+# run docker image: docker run <image-name> (look in local installed images first and then if not found fetch docker hub, it generates random name)
+# run & rename docker image: docker run --name <comtainer-new-name> <image-name>
+# list active containers: docker containers ls
+# list all containers: docker containers ls -a
+# list images: docker images
+# remove docker container: docker rm <container-name or id>

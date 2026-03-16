@@ -1,8 +1,5 @@
-import { pipeline } from 'node:stream/promises';
-import { createWriteStream } from 'node:fs';
-import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { saveProfileImage, deleteOldImage } from '../plugins/upload.js';
+import { saveTicketImage } from '../plugins/r2.js';
 
 export const getMyTickets = async (request, reply) => {
     const { Ticket } = request.server.db.models;
@@ -43,7 +40,7 @@ export const updateMyProfile = async (request, reply) => {
         if (part.type === 'file') {
             const result = await saveProfileImage(part);
             if (result.error) return reply.code(400).send({ error: result.error });
-            newImagePath = result.path;
+            newImagePath = result.url;
         } else {
             fields[part.fieldname] = part.value;
         }
@@ -72,12 +69,9 @@ export const createTicket = async (request, reply) => {
 
     for await (const part of parts) {
         if (part.type === 'file') {
-            const ext = part.filename.substring(part.filename.lastIndexOf('.'));
-            const filename = `${randomUUID()}${ext}`;
-            const destPath = join(process.cwd(), 'uploads', filename);
-
-            await pipeline(part.file, createWriteStream(destPath));
-            imagePath = `uploads/${filename}`;
+            const result = await saveTicketImage(part);
+            if (result.error) return reply.code(400).send({ error: result.error });
+            imagePath = result.url;
         } else {
             fields[part.fieldname] = part.value;
         }
