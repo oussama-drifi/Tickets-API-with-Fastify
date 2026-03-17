@@ -8,6 +8,7 @@ export default async function adminRoutes(fastify) {
     });
 
     fastify.get('/commercials', adminController.getAllCommercials);
+    fastify.get('/commercials/search', adminController.searchCommercials);
     fastify.get('/commercials/:id', adminController.getCommercialById);
     fastify.get('/commercials/:id/tickets', adminController.getCommercialTickets);
     fastify.post('/commercials', adminController.createCommercial);

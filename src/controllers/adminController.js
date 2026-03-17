@@ -105,6 +105,24 @@ export const getAllTickets = async (request, reply) => {
     return tickets;
 };
 
+export const searchCommercials = async (request, reply) => {
+    const { User } = request.server.db.models;
+    const { Op } = request.server.db.sequelize.constructor;
+    const q = (request.query.q || '').trim();
+
+    if (!q) return [];
+
+    const commercials = await User.findAll({
+        where: {
+            role: 'commercial',
+            name: { [Op.like]: `${q}%` }
+        },
+        attributes: ['id', 'name'],
+        limit: 10,
+    });
+    return commercials;
+};
+
 export const getAllCommercials = async (request, reply) => {
     const { User, Ticket } = request.server.db.models;
     const { fn, col } = request.server.db.sequelize;
