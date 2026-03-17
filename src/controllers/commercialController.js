@@ -81,14 +81,15 @@ export const createTicket = async (request, reply) => {
         return reply.code(400).send({ error: 'Image file is required' });
     }
 
-    if (!fields.title || !fields.amount || !fields.ticketDate) {
-        return reply.code(400).send({ error: 'title, amount, and ticketDate are required' });
+    if (!fields.title || !fields.amount || !fields.ticketDate || !fields.category) {
+        return reply.code(400).send({ error: 'title, amount, ticketDate, and category are required' });
     }
 
     const ticket = await Ticket.create({
         title: fields.title,
         description: fields.description || null,
         amount: parseFloat(fields.amount),
+        category: fields.category,
         imagePath,
         ticketDate: new Date(fields.ticketDate),
         userId: request.user.id

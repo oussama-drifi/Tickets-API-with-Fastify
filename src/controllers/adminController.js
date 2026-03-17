@@ -90,11 +90,22 @@ export const getAllTickets = async (request, reply) => {
 };
 
 export const getAllCommercials = async (request, reply) => {
-    const { User } = request.server.db.models;
+    const { User, Ticket } = request.server.db.models;
+    const { fn, col } = request.server.db.sequelize;
 
     const commercials = await User.findAll({
         where: { role: 'commercial' },
-        attributes: { exclude: ['password'] }
+        attributes: {
+            exclude: ['password'],
+            include: [[fn('COUNT', col('tickets.id')), 'ticketsCount']]
+        },
+        include: [{
+            model: Ticket,
+            as: 'tickets',
+            attributes: [],
+        }],
+        group: ['User.id'],
+        subQuery: false,
     });
     return commercials;
 };

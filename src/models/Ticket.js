@@ -17,6 +17,10 @@ export const initTicketModel = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: false
         },
+        category: {
+            type: DataTypes.ENUM('restaurant', 'hotel', 'work'),
+            allowNull: false
+        },
         status: {
             type: DataTypes.ENUM('pending', 'verified', 'paid', 'rejected'),
             defaultValue: 'pending'
