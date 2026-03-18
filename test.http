@@ -126,7 +126,7 @@ Content-Disposition: form-data; name="ticketDate"
 Content-Disposition: form-data; name="image"; filename="receipt.png"
 Content-Type: image/png
 
-< ./uploads/sample.png
+< ./sample.png
 ------Boundary--
 
 ### ===========================
