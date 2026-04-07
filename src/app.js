@@ -11,6 +11,7 @@ import authPlugin from './plugins/auth.js';
 import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import commercialRoutes from './routes/commercialRoutes.js';
+import cardCategoryRoutes from './routes/cardCategoryRoutes.js';
 
 // We export a function that creates the app instance
 export async function buildApp(options = {}) {
@@ -38,6 +39,8 @@ export async function buildApp(options = {}) {
     app.register(authRoutes, { prefix: '/api/auth' });
     app.register(adminRoutes, { prefix: '/api/admin' });
     app.register(commercialRoutes, { prefix: '/api/commercials' });
+    app.register(cardCategoryRoutes, { prefix: '/api/card-categories' });
 
     return app;
+
 }

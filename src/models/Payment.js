@@ -6,9 +6,25 @@ export const initPaymentModel = (sequelize) => {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: false
         },
-        status: {
-            type: DataTypes.ENUM('success', 'failed'),
+        method: {
+            type: DataTypes.ENUM('card', 'cash'),
             allowNull: false
+        },
+        payment_code: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null
+        },
+        card_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null
+        },
+        status: {
+            type: DataTypes.ENUM('in_review', 'success', 'cancelled', 'failed'),
+            allowNull: false,
+            defaultValue: 'in_review'
         }
+
     }, { tableName: 'payments' });
 };
