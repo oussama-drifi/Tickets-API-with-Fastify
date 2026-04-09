@@ -1,5 +1,6 @@
 import * as commercialController from '../controllers/commercialController.js';
 import * as cardController from '../controllers/cardController.js';
+import * as paymentController from '../controllers/paymentController.js'
 
 export default async function commercialRoutes(fastify) {
     fastify.addHook('preHandler', async (request, reply) => {
@@ -12,4 +13,7 @@ export default async function commercialRoutes(fastify) {
     fastify.post('/tickets', commercialController.createTicket);
 
     fastify.get('/cards', cardController.getMyCards);
+
+    fastify.get('/payments', paymentController.getMyPayments);
+    fastify.post('/payments', paymentController.createPayment)
 }

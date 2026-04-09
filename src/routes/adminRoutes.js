@@ -1,6 +1,7 @@
 import * as adminController from '../controllers/adminController.js';
 import * as cardCategoryController from '../controllers/cardCategoryController.js';
 import * as cardController from '../controllers/cardController.js';
+import * as paymentController from '../controllers/paymentController.js'
 
 export default async function adminRoutes(fastify) {
     // This hook runs for EVERY route in this file
@@ -32,4 +33,8 @@ export default async function adminRoutes(fastify) {
     fastify.get('/tickets', adminController.getAllTickets);
     fastify.get('/tickets/:id/image', adminController.getTicketImage);
     fastify.patch('/tickets/:id/status', adminController.updateTicketStatus);
+
+    // Payment routes
+    fastify.get('/payments', paymentController.getAllPayments)
+    fastify.delete('/payments/:id', paymentController.cancelPayment)
 }
