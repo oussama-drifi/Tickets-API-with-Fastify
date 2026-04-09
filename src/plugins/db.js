@@ -28,17 +28,19 @@ async function dbConnector(fastify, options) {
     const Payment = initPaymentModel(sequelize);
 
     User.hasMany(Ticket, { foreignKey: 'userId', as: 'tickets' });
+    User.hasMany(Card, { foreignKey: 'userId', as: 'cards' });
+
     Ticket.belongsTo(User, { foreignKey: 'userId', as: 'owner' });
 
     CardCategory.hasMany(Card, { foreignKey: 'categoryId', as: 'cards' });
-    Card.belongsTo(CardCategory, { foreignKey: 'categoryId', as: 'category' });
 
-    User.hasMany(Card, { foreignKey: 'userId', as: 'cards' });
+    Card.belongsTo(CardCategory, { foreignKey: 'categoryId', as: 'category' });
     Card.belongsTo(User, { foreignKey: 'userId', as: 'owner' });
+
 
     Payment.belongsTo(Ticket, { foreignKey: 'ticketId', as: 'ticket' });
     Payment.belongsTo(User, { foreignKey: 'userId', as: 'payer' });
-    Payment.belongsTo(Card, { foreignKey: 'cardId', as: 'card' });
+    Payment.belongsTo(Card, { foreignKey: 'card_id', as: 'card' });
 
     try {
         await sequelize.authenticate();

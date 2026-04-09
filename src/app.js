@@ -4,7 +4,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 // file uploads built-in plugin
 import multipart from '@fastify/multipart';
-// plugins
+// custom plugins
 import dbConnector from './plugins/db.js';
 import authPlugin from './plugins/auth.js';
 // routes
@@ -19,7 +19,6 @@ export async function buildApp(options = {}) {
 
     // Register Core Plugins
     await app.register(cors, { origin: true, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] });
-
     // Register Multipart (for image uploads)
     await app.register(multipart, {
         limits: {
@@ -32,10 +31,9 @@ export async function buildApp(options = {}) {
     await app.register(authPlugin);
 
     // Basic Health Check Route
-    app.get('/health', async () => {
-        return { status: 'ok', timestamp: new Date() };
-    });
+    app.get('/health', () => ({ status: 'ok', timestamp: new Date() }))
 
+    // register all routes
     app.register(authRoutes, { prefix: '/api/auth' });
     app.register(adminRoutes, { prefix: '/api/admin' });
     app.register(commercialRoutes, { prefix: '/api/commercials' });

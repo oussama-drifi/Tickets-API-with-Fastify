@@ -1,5 +1,6 @@
 import * as adminController from '../controllers/adminController.js';
 import * as cardCategoryController from '../controllers/cardCategoryController.js';
+import * as cardController from '../controllers/cardController.js';
 
 export default async function adminRoutes(fastify) {
     // This hook runs for EVERY route in this file
@@ -8,6 +9,7 @@ export default async function adminRoutes(fastify) {
         await fastify.isAdmin(request, reply);
     });
 
+    // Commercial routes
     fastify.get('/commercials', adminController.getAllCommercials);
     fastify.get('/commercials/search', adminController.searchCommercials);
     fastify.get('/commercials/:id', adminController.getCommercialById);
@@ -15,11 +17,18 @@ export default async function adminRoutes(fastify) {
     fastify.post('/commercials', adminController.createCommercial);
     fastify.patch('/commercials/:id', adminController.updateCommercial);
 
-    // Card category routes — admin only (create, update, delete)
+    // Card category routes
     fastify.post('/card-categories', cardCategoryController.createCardCategory);
     fastify.patch('/card-categories/:id', cardCategoryController.updateCardCategory);
     fastify.delete('/card-categories/:id', cardCategoryController.deleteCardCategory);
 
+    // Card routes
+    fastify.post('/cards', cardController.createCard);
+    fastify.patch('/cards/:id/status', cardController.updateCardStatus);
+    fastify.patch('/cards/:id/balance', cardController.topUpCard);
+    fastify.get('/cards', cardController.getAllCards);
+
+    // Ticket routes
     fastify.get('/tickets', adminController.getAllTickets);
     fastify.get('/tickets/:id/image', adminController.getTicketImage);
     fastify.patch('/tickets/:id/status', adminController.updateTicketStatus);
