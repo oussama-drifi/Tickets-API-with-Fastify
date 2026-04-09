@@ -22,6 +22,7 @@ export default async function adminRoutes(fastify) {
     fastify.post('/card-categories', cardCategoryController.createCardCategory);
     fastify.patch('/card-categories/:id', cardCategoryController.updateCardCategory);
     fastify.delete('/card-categories/:id', cardCategoryController.deleteCardCategory);
+    fastify.get('/card-categories', cardCategoryController.listCardCategories)
 
     // Card routes
     fastify.post('/cards', cardController.createCard);
@@ -36,5 +37,7 @@ export default async function adminRoutes(fastify) {
 
     // Payment routes
     fastify.get('/payments', paymentController.getAllPayments)
+    fastify.patch('/payments/:id/approve', paymentController.approvePayment)
     fastify.delete('/payments/:id', paymentController.cancelPayment)
+    fastify.patch('/payments/:id', paymentController.approvePayment)
 }

@@ -102,7 +102,7 @@ export const createPayment = async (request, reply) => {
                 status: 'success'
             });
 
-            return reply.code(201).send({ message: 'Payment successful', id: payment.id });
+            return reply.code(201).send({ message: 'Payment by card successful', id: payment.id });
         }
 
         // Cash payment — goes into review, no balance changes
@@ -123,5 +123,52 @@ export const createPayment = async (request, reply) => {
 }
 
 export const getMyPayments = async (request, reply) => {
+    try {
+        const { Payment, Card, CardCategory, Ticket } = request.server.db.models;
 
+        const payments = await Payment.findAll({
+            where: { userId: request.user.id },
+            attributes: { exclude: ['ticketId', 'userId', 'card_id'] },
+            include: [
+                { model: Ticket, as: 'ticket', attributes: ['id', 'title', 'amount', 'status'] },
+                {
+                    model: Card, as: 'card', attributes: ['id', 'balance', 'status'],
+                    include: [{ model: CardCategory, as: 'category', attributes: ['id', 'name'] }]
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+
+        return { payments };
+    } catch (error) {
+        request.log.error(error);
+        reply.code(500).send({ error: 'Failed to get payments' });
+    }
+}
+
+export const approvePayment = async (request, reply) => {
+    try {
+        const { Payment, Ticket } = request.server.db.models;
+        const { id } = request.params;
+
+        const payment = await Payment.findByPk(id);
+        // handle edge cases
+        if (!payment) return reply.code(404).send({ error: 'Payment not found' });
+        if (payment.method !== 'cash') return reply.code(400).send({ error: 'Only cash payments can be approved' });
+        if (payment.status !== 'in_review') return reply.code(400).send({ error: 'Only in_review payments can be approved' });
+
+        const ticket = await Ticket.findByPk(payment.ticketId);
+        if (ticket) {
+            ticket.status = 'paid';
+            await ticket.save();
+        }
+
+        payment.status = 'success';
+        await payment.save();
+
+        return { message: 'Payment approved successfully' };
+    } catch (error) {
+        request.log.error(error);
+        reply.code(500).send({ error: 'Failed to approve payment' });
+    }
 }
