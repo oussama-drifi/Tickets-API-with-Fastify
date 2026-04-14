@@ -146,6 +146,26 @@ export const getMyPayments = async (request, reply) => {
     }
 }
 
+export const rejectPayment = async (request, reply) => {
+    try {
+        const { Payment } = request.server.db.models;
+        const { id } = request.params;
+
+        const payment = await Payment.findByPk(id);
+        if (!payment) return reply.code(404).send({ error: 'Payment not found' });
+        if (payment.method !== 'cash') return reply.code(400).send({ error: 'Only cash payments can be rejected' });
+        if (payment.status !== 'in_review') return reply.code(400).send({ error: 'Only in_review payments can be rejected' });
+
+        payment.status = 'failed';
+        await payment.save();
+
+        return { message: 'Payment rejected successfully' };
+    } catch (error) {
+        request.log.error(error);
+        reply.code(500).send({ error: 'Failed to reject payment' });
+    }
+}
+
 export const approvePayment = async (request, reply) => {
     try {
         const { Payment, Ticket } = request.server.db.models;

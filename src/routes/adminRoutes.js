@@ -38,6 +38,6 @@ export default async function adminRoutes(fastify) {
     // Payment routes
     fastify.get('/payments', paymentController.getAllPayments)
     fastify.patch('/payments/:id/approve', paymentController.approvePayment)
+    fastify.patch('/payments/:id/reject', paymentController.rejectPayment)
     fastify.delete('/payments/:id', paymentController.cancelPayment)
-    fastify.patch('/payments/:id', paymentController.approvePayment)
 }
