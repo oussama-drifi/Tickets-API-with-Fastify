@@ -35,23 +35,40 @@ export const getAllPayments = async (request, reply) => {
     try {
         const { Payment, User, Card, CardCategory, Ticket } = request.server.db.models;
 
-        const payments = await Payment.findAll({
+        const page = parseInt(request.query.page) || 1;
+        const limit = parseInt(request.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        const { Op } = request.server.db.sequelize.constructor;
+
+        const where = {};
+        // in case there is a search query
+        if (request.query.label) where.label = { [Op.iLike]: `%${request.query.label}%` };
+
+        const { count, rows: payments } = await Payment.findAndCountAll({
+            where,
             attributes: { exclude: ['ticketId', 'userId', 'card_id'] },
             include: [
-                // who made the payment
                 { model: User, as: 'payer', attributes: ['id', 'name', 'email'] },
-                // which ticket was paid
                 { model: Ticket, as: 'ticket', attributes: ['id', 'title', 'amount', 'status'] },
-                // which card was used (null for cash payments), including its category
                 {
                     model: Card, as: 'card', attributes: ['id', 'balance', 'status'],
                     include: [{ model: CardCategory, as: 'category', attributes: ['id', 'name'] }]
                 }
             ],
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset
         });
 
-        return { payments };
+        return {
+            payments,
+            pagination: {
+                total: count,
+                page,
+                limit,
+                totalPages: Math.ceil(count / limit)
+            }
+        };
     } catch(error) {
         request.log.error(error);
         reply.code(500).send({ error: 'Failed to get payments' });
@@ -61,7 +78,7 @@ export const getAllPayments = async (request, reply) => {
 export const createPayment = async (request, reply) => {
     try {
         const { Payment, Card, Ticket } = request.server.db.models;
-        const { ticket_id, method, card_id, payment_code } = request.body;
+        const { ticket_id, method, card_id, payment_code, label } = request.body;
 
         // Validate required fields & handle edge cases
         if (!ticket_id || !method) return reply.code(400).send({ error: 'ticket_id and method are required' });
@@ -99,7 +116,8 @@ export const createPayment = async (request, reply) => {
                 card_id: card.id,
                 ticketId: ticket_id,
                 userId: request.user.id,
-                status: 'success'
+                status: 'success',
+                label: label || null
             });
 
             return reply.code(201).send({ message: 'Payment by card successful', id: payment.id });
@@ -112,7 +130,8 @@ export const createPayment = async (request, reply) => {
             payment_code,
             ticketId: ticket_id,
             userId: request.user.id,
-            status: 'in_review'
+            status: 'in_review',
+            label: label || null
         });
 
         return reply.code(201).send({ message: 'Payment submitted for review', id: payment.id });

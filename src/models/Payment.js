@@ -24,6 +24,11 @@ export const initPaymentModel = (sequelize) => {
             type: DataTypes.ENUM('in_review', 'success', 'cancelled', 'failed'),
             allowNull: false,
             defaultValue: 'in_review'
+        },
+        label: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null
         }
 
     }, { tableName: 'payments' });
