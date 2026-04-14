@@ -86,16 +86,29 @@ export const getAllCards = async (request, reply) => {
     try {
         const { Card, CardCategory, User } = request.server.db.models;
 
-        // Include category and owner so the admin sees full card info in one request
-        const cards = await Card.findAll({
+        const page = parseInt(request.query.page) || 1;
+        const limit = parseInt(request.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: cards } = await Card.findAndCountAll({
             include: [
                 { model: CardCategory, as: 'category', attributes: ['id', 'name'] },
                 { model: User, as: 'owner', attributes: ['id', 'name', 'email'] }
             ],
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset
         });
 
-        return { cards };
+        return {
+            cards,
+            pagination: {
+                total: count,
+                page,
+                limit,
+                totalPages: Math.ceil(count / limit)
+            }
+        };
     } catch (error) {
         request.log.error(error);
         return reply.code(500).send({ error: 'Failed to fetch cards' });
