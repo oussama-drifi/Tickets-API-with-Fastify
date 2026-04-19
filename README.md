@@ -69,10 +69,16 @@ Tickets-API-with-Fastify/
 │   ├── controllers/
 │   │   ├── authController.js
 │   │   ├── adminController.js
-│   │   └── commercialController.js
+│   │   ├── commercialController.js
+│   │   ├── cardCategoryController.js
+│   │   ├── cardController.js
+│   │   └── paymentController.js
 │   ├── models/
 │   │   ├── User.js
-│   │   └── Ticket.js
+│   │   ├── Ticket.js
+│   │   ├── CardCategory.js
+│   │   ├── Card.js
+│   │   └── Payment.js
 │   ├── plugins/
 │   │   ├── db.js
 │   │   ├── auth.js
@@ -91,39 +97,72 @@ Tickets-API-with-Fastify/
 
 ### User
 
-| Field            | Type                          | Notes                          |
-|------------------|-------------------------------|--------------------------------|
-| id               | INTEGER (PK, auto-increment)  |                                |
-| name             | STRING                        | required                       |
-| email            | STRING                        | required, unique               |
-| password         | STRING                        | required, hashed               |
-| role             | ENUM(`admin`, `commercial`)   | default: `commercial`          |
-| bio              | TEXT                          | nullable                       |
-| status           | ENUM(`active`, `suspended`)   | nullable (null for admin)      |
-| profileImagePath | STRING                        | nullable                       |
+| Field            | Type                          | Notes                     |
+|------------------|-------------------------------|---------------------------|
+| id               | INTEGER (PK, auto-increment)  |                           |
+| name             | STRING                        | required                  |
+| email            | STRING                        | required, unique          |
+| password         | STRING                        | required, hashed          |
+| role             | ENUM(`admin`, `commercial`)   | default: `commercial`     |
+| bio              | TEXT                          | nullable                  |
+| status           | ENUM(`active`, `suspended`)   | nullable (null for admin) |
+| profileImagePath | STRING                        | nullable                  |
 
 ### Ticket
 
-| Field      | Type                                              | Notes              |
-|------------|---------------------------------------------------|--------------------|
-| id         | INTEGER (PK, auto-increment)                      |                    |
-| title      | STRING                                            | required           |
-| description| TEXT                                              | optional           |
-| amount     | DECIMAL(10,2)                                     | required           |
-| imagePath  | STRING                                            | required           |
-| category   | ENUM(`restaurant`, `hotel`, `work`)               | required           |
-| status     | ENUM(`pending`, `verified`, `paid`, `rejected`)   | default: `pending` |
-| ticketDate | DATE                                              | required           |
-| userId     | INTEGER (FK -> User)                              |                    |
+| Field       | Type                                            | Notes              |
+|-------------|-------------------------------------------------|--------------------|
+| id          | INTEGER (PK, auto-increment)                    |                    |
+| title       | STRING                                          | required           |
+| description | TEXT                                            | optional           |
+| amount      | DECIMAL(10,2)                                   | required           |
+| imagePath   | STRING                                          | required           |
+| category    | ENUM(`restaurant`, `hotel`, `work`)             | required           |
+| status      | ENUM(`pending`, `verified`, `paid`, `rejected`) | default: `pending` |
+| ticketDate  | DATE                                            | required           |
+| userId      | INTEGER (FK -> User)                            |                    |
+
+### CardCategory
+
+| Field | Type                         | Notes    |
+|-------|------------------------------|----------|
+| id    | INTEGER (PK, auto-increment) |          |
+| name  | STRING                       | required |
+
+### Card
+
+| Field      | Type                         | Notes                        |
+|------------|------------------------------|------------------------------|
+| id         | INTEGER (PK, auto-increment) |                              |
+| balance    | DECIMAL(10,2)                | required                     |
+| status     | ENUM(`active`, `blocked`)    | default: `active`            |
+| categoryId | INTEGER (FK -> CardCategory) |                              |
+| userId     | INTEGER (FK -> User)         | must be a commercial account |
+
+### Payment
+
+| Field        | Type                                              | Notes                           |
+|--------------|---------------------------------------------------|---------------------------------|
+| id           | INTEGER (PK, auto-increment)                      |                                 |
+| amount       | DECIMAL(10,2)                                     | required                        |
+| method       | ENUM(`card`, `cash`)                              | required                        |
+| status       | ENUM(`in_review`, `success`, `cancelled`, `failed`) | default: `in_review`          |
+| label        | STRING                                            | optional, set by commercial     |
+| payment_code | STRING                                            | nullable, cash payments only    |
+| card_id      | INTEGER (FK -> Card)                              | nullable, card payments only    |
+| ticketId     | INTEGER (FK -> Ticket)                            |                                 |
+| userId       | INTEGER (FK -> User)                              |                                 |
+
+---
 
 ## API Endpoints
 
 ### Authentication
 
-| Method | Endpoint           | Description   | Auth |
-|--------|--------------------|---------------|------|
-| POST   | `/api/auth/login`  | Login         | No   |
-| GET    | `/api/auth/me`     | Current user  | Yes  |
+| Method | Endpoint          | Description  | Auth |
+|--------|-------------------|--------------|------|
+| POST   | `/api/auth/login` | Login        | No   |
+| GET    | `/api/auth/me`    | Current user | Yes  |
 
 #### `POST /api/auth/login`
 
@@ -140,192 +179,123 @@ Tickets-API-with-Fastify/
 }
 ```
 
-#### `GET /api/auth/me`
-
-**Response:**
-```json
-{
-  "user": {
-    "id": 1, "name": "John Doe", "email": "john@example.com",
-    "role": "commercial", "bio": "...", "status": "active",
-    "profileImagePath": "https://profiles.your-domain.com/abc.jpg",
-    "createdAt": "...", "updatedAt": "..."
-  }
-}
-```
-
 ---
 
 ### Admin (requires admin role)
 
-| Method | Endpoint                              | Description                  |
-|--------|---------------------------------------|------------------------------|
-| GET    | `/api/admin/commercials`              | List all commercials         |
-| GET    | `/api/admin/commercials/search`       | Search commercials by name   |
-| GET    | `/api/admin/commercials/:id`          | Get commercial details       |
-| GET    | `/api/admin/commercials/:id/tickets`  | Get commercial's tickets     |
-| POST   | `/api/admin/commercials`              | Create commercial account    |
-| PATCH  | `/api/admin/commercials/:id`          | Update commercial            |
-| GET    | `/api/admin/tickets`                  | List all tickets             |
-| GET    | `/api/admin/tickets/:id/image`        | Get ticket image path        |
-| PATCH  | `/api/admin/tickets/:id/status`       | Update ticket status         |
+#### Commercials
 
-#### `GET /api/admin/commercials/search`
+| Method | Endpoint                             | Description                |
+|--------|--------------------------------------|----------------------------|
+| GET    | `/api/admin/commercials`             | List all commercials       |
+| GET    | `/api/admin/commercials/search`      | Search commercials by name |
+| GET    | `/api/admin/commercials/:id`         | Get commercial details     |
+| GET    | `/api/admin/commercials/:id/tickets` | Get commercial's tickets   |
+| POST   | `/api/admin/commercials`             | Create commercial account  |
+| PATCH  | `/api/admin/commercials/:id`         | Update commercial          |
 
-**Query params:** `q` — name prefix to search for
+#### Tickets
 
-**Response:**
+| Method | Endpoint                        | Description           |
+|--------|---------------------------------|-----------------------|
+| GET    | `/api/admin/tickets`            | List all tickets (paginated, filterable) |
+| GET    | `/api/admin/tickets/:id/image`  | Get ticket image path |
+| PATCH  | `/api/admin/tickets/:id/status` | Update ticket status  |
+
+**`GET /api/admin/tickets` query params:** `status`, `category`, `dateFrom`, `dateTo`, `page`, `limit`
+
+#### Card Categories
+
+| Method | Endpoint                          | Description             |
+|--------|-----------------------------------|-------------------------|
+| GET    | `/api/admin/card-categories`      | List all categories     |
+| POST   | `/api/admin/card-categories`      | Create category         |
+| PATCH  | `/api/admin/card-categories/:id`  | Update category         |
+| DELETE | `/api/admin/card-categories/:id`  | Delete category         |
+
+#### Cards
+
+| Method | Endpoint                     | Description                       |
+|--------|------------------------------|-----------------------------------|
+| GET    | `/api/admin/cards`           | List all cards (paginated)        |
+| POST   | `/api/admin/cards`           | Create card for a commercial      |
+| PATCH  | `/api/admin/cards/:id/status`| Block or unblock a card           |
+| PATCH  | `/api/admin/cards/:id/balance`| Top up card balance              |
+
+**`GET /api/admin/cards` query params:** `page`, `limit`
+
+**`POST /api/admin/cards` body:**
 ```json
-[
-  { "id": 1, "name": "John Doe" },
-  { "id": 2, "name": "John Smith" }
-]
+{ "user_id": 1, "category_id": 2, "balance": 500 }
 ```
 
-#### `POST /api/admin/commercials`
-
-**Body (multipart/form-data):**
-- `name` (required), `email` (required), `password` (required), `bio` (optional), profile image file (optional)
-
-**Response (201):**
+**`PATCH /api/admin/cards/:id/status` body:**
 ```json
-{ "message": "Commercial account created successfully", "id": 1 }
+{ "status": "blocked" }
 ```
 
-#### `PATCH /api/admin/commercials/:id`
-
-**Body (multipart/form-data):**
-- `name` (optional), `bio` (optional), `status`: `active` | `suspended` (optional), profile image file (optional)
-
-**Response:**
+**`PATCH /api/admin/cards/:id/balance` body:**
 ```json
-{
-  "message": "Commercial updated successfully",
-  "commercial": {
-    "id": 1, "name": "John Doe", "email": "john@example.com",
-    "role": "commercial", "bio": "...", "status": "active",
-    "profileImagePath": "https://profiles.your-domain.com/abc.jpg",
-    "createdAt": "...", "updatedAt": "..."
-  }
-}
+{ "amount": 200 }
 ```
 
-#### `GET /api/admin/commercials/:id/tickets`
+#### Payments
 
-**Response:** (no `imagePath`)
-```json
-[
-  {
-    "id": 1, "title": "Office supplies", "description": "Printer ink",
-    "amount": "150.00", "category": "work", "status": "pending",
-    "ticketDate": "2026-03-01T00:00:00.000Z",
-    "createdAt": "...", "updatedAt": "...", "userId": 1
-  }
-]
-```
+| Method | Endpoint                          | Description                              |
+|--------|-----------------------------------|------------------------------------------|
+| GET    | `/api/admin/payments`             | List all payments (paginated, searchable)|
+| PATCH  | `/api/admin/payments/:id/approve` | Approve a cash payment in review         |
+| PATCH  | `/api/admin/payments/:id/reject`  | Reject a cash payment in review          |
+| DELETE | `/api/admin/payments/:id`         | Cancel a successful payment              |
 
-#### `GET /api/admin/tickets`
+**`GET /api/admin/payments` query params:** `label` (partial match), `page`, `limit`
 
-**Response:** (no `imagePath`)
-```json
-[
-  {
-    "id": 1, "title": "Office supplies", "description": "Printer ink",
-    "amount": "150.00", "category": "work", "status": "pending",
-    "ticketDate": "2026-03-01T00:00:00.000Z",
-    "createdAt": "...", "updatedAt": "...", "userId": 1,
-    "owner": { "email": "john@example.com" }
-  }
-]
-```
+**Approve:** cash + `in_review` only → status becomes `success`, ticket → `paid`
 
-#### `GET /api/admin/tickets/:id/image`
+**Reject:** cash + `in_review` only → status becomes `failed`, ticket unchanged
 
-**Response:**
-```json
-{ "id": 1, "imagePath": "https://tickets.your-domain.com/some-uuid.jpg" }
-```
-
-#### `PATCH /api/admin/tickets/:id/status`
-
-**Body (JSON):**
-```json
-{ "status": "verified" }
-```
-
-**Response:**
-```json
-{ "message": "Ticket 1 is now verified" }
-```
+**Cancel:** `success` payments only → status becomes `cancelled`, ticket → `verified`, card balance restored if card payment
 
 ---
 
 ### Commercial (requires authentication)
 
-| Method | Endpoint                              | Description          |
-|--------|---------------------------------------|----------------------|
-| PATCH  | `/api/commercials/profile`            | Update own profile   |
-| GET    | `/api/commercials/tickets`            | List own tickets     |
-| GET    | `/api/commercials/tickets/:id/image`  | Get ticket image path|
-| POST   | `/api/commercials/tickets`            | Create ticket        |
+#### Profile & Tickets
 
-#### `PATCH /api/commercials/profile`
+| Method | Endpoint                             | Description           |
+|--------|--------------------------------------|-----------------------|
+| PATCH  | `/api/commercials/profile`           | Update own profile    |
+| GET    | `/api/commercials/tickets`           | List own tickets      |
+| GET    | `/api/commercials/tickets/:id/image` | Get ticket image path |
+| POST   | `/api/commercials/tickets`           | Create ticket         |
 
-**Body (multipart/form-data):**
-- `name` (optional), `bio` (optional), profile image file (optional)
+#### Cards
 
-**Response:**
+| Method | Endpoint               | Description      |
+|--------|------------------------|------------------|
+| GET    | `/api/commercials/cards` | List own cards |
+
+#### Payments
+
+| Method | Endpoint                      | Description           |
+|--------|-------------------------------|-----------------------|
+| GET    | `/api/commercials/payments`   | List own payments     |
+| POST   | `/api/commercials/payments`   | Initiate a payment    |
+
+**`POST /api/commercials/payments` body:**
 ```json
 {
-  "message": "Profile updated successfully",
-  "user": {
-    "id": 1, "name": "John Doe", "email": "john@example.com",
-    "role": "commercial", "bio": "...", "status": "active",
-    "profileImagePath": "https://profiles.your-domain.com/abc.jpg",
-    "createdAt": "...", "updatedAt": "..."
-  }
+  "ticket_id": 1,
+  "method": "card",
+  "card_id": 3,
+  "label": "Q1 expenses"
 }
 ```
+For cash payments, replace `card_id` with `payment_code` and omit `card_id`. `label` is optional for both methods.
 
-#### `GET /api/commercials/tickets`
+**Card payment rules:** card must be active, balance must cover ticket amount, ticket must be `verified`. On success: balance deducted, ticket → `paid`, payment → `success`.
 
-**Response:** (no `imagePath`)
-```json
-[
-  {
-    "id": 1, "title": "Office supplies", "description": "Printer ink",
-    "amount": "150.00", "category": "work", "status": "pending",
-    "ticketDate": "2026-03-01T00:00:00.000Z",
-    "createdAt": "...", "updatedAt": "...", "userId": 1
-  }
-]
-```
-
-#### `GET /api/commercials/tickets/:id/image`
-
-**Response:**
-```json
-{ "id": 1, "imagePath": "https://tickets.your-domain.com/some-uuid.jpg" }
-```
-
-#### `POST /api/commercials/tickets`
-
-**Body (multipart/form-data):**
-- `title` (required), `amount` (required), `ticketDate` (required), `category`: `restaurant` | `hotel` | `work` (required), `description` (optional), ticket image file (required)
-
-**Response (201):**
-```json
-{
-  "message": "Ticket created successfully",
-  "ticket": {
-    "id": 1, "title": "Office supplies", "description": "Printer ink",
-    "amount": "150.00", "imagePath": "https://tickets.your-domain.com/some-uuid.jpg",
-    "category": "work", "status": "pending",
-    "ticketDate": "2026-03-01T00:00:00.000Z",
-    "userId": 1, "createdAt": "...", "updatedAt": "..."
-  }
-}
-```
+**Cash payment rules:** ticket must be `verified`. Payment goes to `in_review` for admin review. Ticket stays `verified` until admin approves.
 
 ---
 
