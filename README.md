@@ -110,17 +110,18 @@ Tickets-API-with-Fastify/
 
 ### Ticket
 
-| Field       | Type                                            | Notes              |
-|-------------|-------------------------------------------------|--------------------|
-| id          | INTEGER (PK, auto-increment)                    |                    |
-| title       | STRING                                          | required           |
-| description | TEXT                                            | optional           |
-| amount      | DECIMAL(10,2)                                   | required           |
-| imagePath   | STRING                                          | required           |
-| category    | ENUM(`restaurant`, `hotel`, `work`)             | required           |
-| status      | ENUM(`pending`, `verified`, `paid`, `rejected`) | default: `pending` |
-| ticketDate  | DATE                                            | required           |
-| userId      | INTEGER (FK -> User)                            |                    |
+| Field        | Type                                            | Notes              |
+|--------------|-------------------------------------------------|--------------------|
+| id           | INTEGER (PK, auto-increment)                    |                    |
+| title        | STRING                                          | required           |
+| description  | TEXT                                            | optional           |
+| amount       | DECIMAL(10,2)                                   | required           |
+| imageFullUrl | STRING                                          | required           |
+| imageThumbUrl| STRING                                          | required           |
+| category     | ENUM(`restaurant`, `hotel`, `work`)             | required           |
+| status       | ENUM(`pending`, `verified`, `paid`, `rejected`) | default: `pending` |
+| ticketDate   | DATE                                            | required           |
+| userId       | INTEGER (FK -> User)                            |                    |
 
 ### CardCategory
 
