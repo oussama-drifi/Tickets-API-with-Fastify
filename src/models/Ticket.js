@@ -13,7 +13,11 @@ export const initTicketModel = (sequelize) => {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: false
         },
-        imagePath: {
+        imageFullUrl: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+        imageThumbUrl: {
             type: DataTypes.STRING,
             allowNull: false
         },
