@@ -259,11 +259,11 @@ export const getTicketImage = async (request, reply) => {
         const { id } = request.params;
 
         const ticket = await Ticket.findByPk(id, {
-            attributes: ['id', 'imagePath']
+            attributes: ['id', 'imageFullUrl']
         });
 
         if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
-        return { id: ticket.id, imagePath: ticket.imagePath };
+        return { id: ticket.id, imagePath: ticket.imageFullUrl };
     } catch (error) {
         request.log.error(error);
         return reply.code(500).send({ error: 'Failed to fetch ticket image' });
@@ -278,6 +278,16 @@ export const updateTicketStatus = async (request, reply) => {
 
         const ticket = await Ticket.findByPk(id);
         if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
+
+        if (ticket.status === "pending" && !["verified", "rejected"].includes(status)) {
+            return reply.code(400).send({ error: 'invalid status update' });
+        }
+        if (ticket.status === "verified" && status !== "rejected") {
+            return reply.code(400).send({ error: 'invalid status update' });
+        }
+        if (ticket.status === "rejected" && status !== "verified") {
+            return reply.code(400).send({ error: 'invalid status update' });
+        }
 
         ticket.status = status;
         await ticket.save();
