@@ -24,7 +24,7 @@ export const getMyTickets = async (request, reply) => {
 
     const { count, rows } = await Ticket.findAndCountAll({
         where,
-        attributes: { exclude: ['imagePath'] },
+        attributes: { exclude: ['imageFullUrl'] },
         order: [['createdAt', 'DESC']],
         limit: pageSize,
         offset: (pageNum - 1) * pageSize
@@ -39,7 +39,7 @@ export const getMyTicketImage = async (request, reply) => {
 
     const ticket = await Ticket.findOne({
         where: { id, userId: request.user.id },
-        attributes: ['id', 'imagePath']
+        attributes: ['id', 'imageFullUrl']
     });
 
     if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
@@ -81,6 +81,8 @@ export const updateMyProfile = async (request, reply) => {
     return { message: 'Profile updated successfully', user: userData };
 };
 
+
+// to be updated to add image processing and thumbnail
 export const createTicket = async (request, reply) => {
     const { Ticket } = request.server.db.models;
     const fields = {};
@@ -116,7 +118,7 @@ export const createTicket = async (request, reply) => {
         description: fields.description || null,
         amount: parseFloat(fields.amount),
         category: fields.category,
-        imagePath,
+        imageFullUrl,
         ticketDate: new Date(fields.ticketDate),
         userId: request.user.id
     });

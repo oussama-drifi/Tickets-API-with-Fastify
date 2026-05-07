@@ -27,6 +27,8 @@ async function dbConnector(fastify, options) {
     const Card = initCardModel(sequelize);
     const Payment = initPaymentModel(sequelize);
 
+
+    // define relationships
     User.hasMany(Ticket, { foreignKey: 'userId', as: 'tickets' });
     User.hasMany(Card, { foreignKey: 'userId', as: 'cards' });
 
@@ -45,22 +47,38 @@ async function dbConnector(fastify, options) {
     try {
         await sequelize.authenticate();
         // Sync models with DB (in dev only!)
-        await sequelize.sync();
+        if (process.env.NODE_ENV === 'development') {
+            await sequelize.sync({ alter: true });
+            fastify.log.info('Database synced (dev mode)');
+        } else {
+            fastify.log.info('Skipping sync in production');
+        }
         
         fastify.log.info('success: Database connected and synced');
 
+
         // Seed default admin if none exists
-        const adminExists = await User.findOne({ where: { role: 'admin' } });
-        if (!adminExists) {
-            const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'test123', 10);
-            await User.create({
-                name: 'Admin',
-                email: process.env.ADMIN_EMAIL || 'test@example.com',
-                password: hashedPassword,
-                role: 'admin'
-            });
-            fastify.log.info('Default admin account created');
+        try {
+            const adminExists = await User.findOne({ where: { role: 'admin' } });
+            if (!adminExists) {
+                const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'test123', 10);
+                await User.create({
+                    name: 'Admin',
+                    email: process.env.ADMIN_EMAIL || 'test@example.com',
+                    password: hashedPassword,
+                    role: 'admin'
+                });
+                fastify.log.info('Default admin account created');
+            }
+        } catch (seedError) {
+            fastify.log.warn('Admin seeding failed:', seedError.message);
         }
+
+        // close db connection when server shuts down
+        fastify.addHook('onClose', async () => {
+            await sequelize.close();
+            fastify.log.info('Database connection closed');
+        });
 
         // Decorate fastify instance
         fastify.decorate('db', {

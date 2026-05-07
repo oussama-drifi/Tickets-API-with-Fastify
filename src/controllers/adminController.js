@@ -114,7 +114,7 @@ export const getAllTickets = async (request, reply) => {
 
         const { count, rows } = await Ticket.findAndCountAll({
             where,
-            attributes: { exclude: ['imagePath'] },
+            attributes: { exclude: ['imageFullUrl'] },
             include: [{ model: User, as: 'owner', attributes: ['email'] }],
             order: [['createdAt', 'DESC']],
             limit: pageSize,
