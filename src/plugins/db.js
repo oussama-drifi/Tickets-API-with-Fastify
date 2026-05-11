@@ -56,7 +56,6 @@ async function dbConnector(fastify, options) {
         
         fastify.log.info('success: Database connected and synced');
 
-
         // Seed default admin if none exists
         try {
             const adminExists = await User.findOne({ where: { role: 'admin' } });

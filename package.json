@@ -22,6 +22,7 @@
     "fastify-plugin": "^5.1.0",
     "mysql2": "^3.18.2",
     "sequelize": "^6.37.7",
+    "sharp": "^0.32.1",
     "uuid": "^13.0.0"
   },
   "type": "module",

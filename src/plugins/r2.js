@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'node:crypto';
+import sharp from 'sharp';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -12,41 +13,19 @@ const s3 = new S3Client({
     },
 });
 
-async function uploadToR2(bucket, publicUrl, filePart) {
-    if (!ALLOWED_IMAGE_TYPES.includes(filePart.mimetype)) {
-        return { error: 'Only JPEG, PNG, and WebP images are allowed' };
-    }
-
-    const ext = filePart.filename.substring(filePart.filename.lastIndexOf('.'));
+async function uploadBuffer(bucket, publicUrl, buffer, contentType, ext) {
     const key = `${randomUUID()}${ext}`;
-
-    let buffer;
-    try {
-        buffer = await filePart.toBuffer();
-    } catch (err) {
-        console.error('R2 upload — failed to read file buffer:', err);
-        return { error: 'Failed to read uploaded file' };
-    }
-
     try {
         await s3.send(new PutObjectCommand({
             Bucket: bucket,
             Key: key,
             Body: buffer,
-            ContentType: filePart.mimetype,
+            ContentType: contentType,
         }));
     } catch (err) {
-        console.error('R2 upload — S3 PutObject failed:', {
-            code: err.Code,
-            status: err.$metadata?.httpStatusCode,
-            bucket,
-            key,
-            endpoint: `https://${process.env.R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`,
-            message: err.message,
-        });
+        console.error('R2 upload — S3 PutObject failed:', err);
         return { error: 'Failed to upload image to storage' };
     }
-
     return { url: `${publicUrl}/${key}` };
 }
 
@@ -68,25 +47,67 @@ async function deleteFromR2(bucket, imageUrl) {
 }
 
 export async function saveProfileImage(filePart) {
-    return uploadToR2(
-        process.env.R2_PROFILES_BUCKET,
-        process.env.R2_PROFILES_PUBLIC_URL,
-        filePart
-    );
+    // keep backward compatible behavior: return { url }
+    const res = await uploadForTicketOrProfile(process.env.R2_PROFILES_BUCKET, process.env.R2_PROFILES_PUBLIC_URL, filePart, { makeThumb: false });
+    if (res.error) return res;
+    return { url: res.fullUrl };
 }
 
 export async function deleteProfileImage(imageUrl) {
     return deleteFromR2(process.env.R2_PROFILES_BUCKET, imageUrl);
 }
 
-export async function saveTicketImage(filePart) {
-    return uploadToR2(
-        process.env.R2_TICKETS_BUCKET,
-        process.env.R2_TICKETS_PUBLIC_URL,
-        filePart
-    );
+async function uploadForTicketOrProfile(bucket, publicUrl, filePart, options = { makeThumb: true }) {
+    if (!ALLOWED_IMAGE_TYPES.includes(filePart.mimetype)) {
+        return { error: 'Only JPEG, PNG, and WebP images are allowed' };
+    }
+
+    let buffer;
+    try {
+        buffer = await filePart.toBuffer();
+    } catch (err) {
+        console.error('R2 upload — failed to read file buffer:', err);
+        return { error: 'Failed to read uploaded file' };
+    }
+
+    const extIndex = filePart.filename ? filePart.filename.lastIndexOf('.') : -1;
+    const ext = extIndex !== -1 ? filePart.filename.substring(extIndex) : '';
+
+    // Upload original
+    const originalResult = await uploadBuffer(bucket, publicUrl, buffer, filePart.mimetype, ext);
+    if (originalResult.error) return originalResult;
+
+    let thumbResult = null;
+    if (options.makeThumb) {
+        try {
+            const thumbBuffer = await sharp(buffer).resize({ width: 400 }).webp({ quality: 75 }).toBuffer();
+            thumbResult = await uploadBuffer(bucket, publicUrl, thumbBuffer, 'image/webp', '.webp');
+            if (thumbResult.error) {
+                // cleanup original if thumb failed
+                await deleteFromR2(bucket, originalResult.url);
+                return thumbResult;
+            }
+        } catch (err) {
+            console.error('Thumbnail creation failed:', err);
+            // cleanup original
+            await deleteFromR2(bucket, originalResult.url);
+            return { error: 'Failed to process thumbnail' };
+        }
+    }
+
+    return { fullUrl: originalResult.url, thumbUrl: thumbResult ? thumbResult.url : null };
 }
 
-export async function deleteTicketImage(imageUrl) {
-    return deleteFromR2(process.env.R2_TICKETS_BUCKET, imageUrl);
+export async function saveTicketImage(filePart) {
+    return uploadForTicketOrProfile(process.env.R2_TICKETS_BUCKET, process.env.R2_TICKETS_PUBLIC_URL, filePart, { makeThumb: true });
+}
+
+export async function deleteTicketImage(imageUrlOrObj) {
+    // Accept either a single url string or an object { fullUrl, thumbUrl }
+    if (!imageUrlOrObj) return;
+    if (typeof imageUrlOrObj === 'string') {
+        return deleteFromR2(process.env.R2_TICKETS_BUCKET, imageUrlOrObj);
+    }
+    if (imageUrlOrObj.fullUrl) await deleteFromR2(process.env.R2_TICKETS_BUCKET, imageUrlOrObj.fullUrl);
+    if (imageUrlOrObj.thumbUrl) await deleteFromR2(process.env.R2_TICKETS_BUCKET, imageUrlOrObj.thumbUrl);
 }

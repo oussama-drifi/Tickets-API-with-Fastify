@@ -24,7 +24,7 @@ export const getMyTickets = async (request, reply) => {
 
     const { count, rows } = await Ticket.findAndCountAll({
         where,
-        attributes: { exclude: ['imageFullUrl'] },
+        attributes: { exclude: ['imageFullUrl', 'imageThumbUrl'] },
         order: [['createdAt', 'DESC']],
         limit: pageSize,
         offset: (pageNum - 1) * pageSize
@@ -39,11 +39,11 @@ export const getMyTicketImage = async (request, reply) => {
 
     const ticket = await Ticket.findOne({
         where: { id, userId: request.user.id },
-        attributes: ['id', 'imageFullUrl']
+        attributes: ['id', 'imageFullUrl', 'imageThumbUrl']
     });
 
     if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
-    return { id: ticket.id, imagePath: ticket.imagePath };
+    return { id: ticket.id, imageFullUrl: ticket.imageFullUrl, imageThumbUrl: ticket.imageThumbUrl };
 };
 
 export const updateMyProfile = async (request, reply) => {
@@ -82,11 +82,11 @@ export const updateMyProfile = async (request, reply) => {
 };
 
 
-// to be updated to add image processing and thumbnail
 export const createTicket = async (request, reply) => {
     const { Ticket } = request.server.db.models;
     const fields = {};
-    let imagePath = null;
+    let imageFullUrl = null;
+    let imageThumbUrl = null;
 
     const parts = request.parts();
 
@@ -94,13 +94,14 @@ export const createTicket = async (request, reply) => {
         if (part.type === 'file') {
             const result = await saveTicketImage(part);
             if (result.error) return reply.code(400).send({ error: result.error });
-            imagePath = result.url;
+            imageFullUrl = result.fullUrl;
+            imageThumbUrl = result.thumbUrl;
         } else {
             fields[part.fieldname] = part.value;
         }
     }
 
-    if (!imagePath) {
+    if (!imageFullUrl || !imageThumbUrl) {
         return reply.code(400).send({ error: 'Image file is required' });
     }
 
@@ -119,6 +120,7 @@ export const createTicket = async (request, reply) => {
         amount: parseFloat(fields.amount),
         category: fields.category,
         imageFullUrl,
+        imageThumbUrl,
         ticketDate: new Date(fields.ticketDate),
         userId: request.user.id
     });
