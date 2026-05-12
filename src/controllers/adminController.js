@@ -241,7 +241,7 @@ export const getCommercialTickets = async (request, reply) => {
 
         const { count, rows } = await Ticket.findAndCountAll({
             where,
-            attributes: { exclude: ['imageFullUrl', 'imageThumbUrl'] },
+            attributes: { exclude: ['imageFullUrl'] },
             order: [['createdAt', 'DESC']],
             limit: pageSize,
             offset: (pageNum - 1) * pageSize
@@ -259,11 +259,11 @@ export const getTicketImage = async (request, reply) => {
         const { id } = request.params;
 
         const ticket = await Ticket.findByPk(id, {
-            attributes: ['id', 'imageFullUrl', 'imageThumbUrl']
+            attributes: ['id', 'imageFullUrl']
         });
 
         if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
-        return { id: ticket.id, imageFullUrl: ticket.imageFullUrl, imageThumbUrl: ticket.imageThumbUrl };
+        return { id: ticket.id, imageThumbUrl: ticket.imageThumbUrl };
     } catch (error) {
         request.log.error(error);
         return reply.code(500).send({ error: 'Failed to fetch ticket image' });
