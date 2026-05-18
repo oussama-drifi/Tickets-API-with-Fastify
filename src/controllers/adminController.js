@@ -263,7 +263,7 @@ export const getTicketImage = async (request, reply) => {
         });
 
         if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
-        return { id: ticket.id, imageThumbUrl: ticket.imageThumbUrl };
+        return { id: ticket.id, imageFullUrl: ticket.imageFullUrl };
     } catch (error) {
         request.log.error(error);
         return reply.code(500).send({ error: 'Failed to fetch ticket image' });

@@ -4,6 +4,11 @@ import sharp from 'sharp';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+// Minimal env validation for required R2 credentials
+if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+    throw new Error('Missing R2 configuration: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required');
+}
+
 const s3 = new S3Client({
     region: 'auto',
     endpoint: `https://${process.env.R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`,
@@ -12,6 +17,11 @@ const s3 = new S3Client({
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     },
 });
+
+function normalizePublicUrl(url) {
+    if (!url) return '';
+    return url.replace(/\/+$/g, '');
+}
 
 async function uploadBuffer(bucket, publicUrl, buffer, contentType, ext) {
     const key = `${randomUUID()}${ext}`;
@@ -26,14 +36,16 @@ async function uploadBuffer(bucket, publicUrl, buffer, contentType, ext) {
         console.error('R2 upload — S3 PutObject failed:', err);
         return { error: 'Failed to upload image to storage' };
     }
-    return { url: `${publicUrl}/${key}` };
+    const base = normalizePublicUrl(publicUrl) || '';
+    const url = base ? `${base}/${key}` : key;
+    return { url, key };
 }
 
 async function deleteFromR2(bucket, imageUrl) {
     if (!imageUrl) return;
-
-    // Extract the key (filename) from the full URL
-    const key = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+    // Strip query string and fragment if present
+    const cleanUrl = imageUrl.split('?')[0].split('#')[0];
+    const key = cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1);
     if (!key) return;
 
     try {
@@ -41,8 +53,9 @@ async function deleteFromR2(bucket, imageUrl) {
             Bucket: bucket,
             Key: key,
         }));
-    } catch {
-        // Ignore delete errors — file may already be gone
+    } catch (err) {
+        // Log delete errors for easier debugging — not fatal
+        console.error('R2 deletion — S3 DeleteObject failed:', err);
     }
 }
 
@@ -84,18 +97,23 @@ async function uploadForTicketOrProfile(bucket, publicUrl, filePart, options = {
             thumbResult = await uploadBuffer(bucket, publicUrl, thumbBuffer, 'image/webp', '.webp');
             if (thumbResult.error) {
                 // cleanup original if thumb failed
-                await deleteFromR2(bucket, originalResult.url);
+                await deleteFromR2(bucket, originalResult.url || originalResult.key);
                 return thumbResult;
             }
         } catch (err) {
             console.error('Thumbnail creation failed:', err);
             // cleanup original
-            await deleteFromR2(bucket, originalResult.url);
+            await deleteFromR2(bucket, originalResult.url || originalResult.key);
             return { error: 'Failed to process thumbnail' };
         }
     }
 
-    return { fullUrl: originalResult.url, thumbUrl: thumbResult ? thumbResult.url : null };
+    // Build returned URLs consistently
+    const basePublic = normalizePublicUrl(publicUrl);
+    const fullUrl = originalResult.key ? (basePublic ? `${basePublic}/${originalResult.key}` : originalResult.key) : originalResult.url;
+    const thumbUrl = thumbResult ? (thumbResult.key ? (basePublic ? `${basePublic}/${thumbResult.key}` : thumbResult.key) : thumbResult.url) : null;
+
+    return { fullUrl, thumbUrl };
 }
 
 export async function saveTicketImage(filePart) {
